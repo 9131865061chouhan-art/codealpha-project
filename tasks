@@ -1,1 +1,170 @@
-helloo
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Language Translation Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
+
+  <div class="w-full max-w-4xl bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-6 md:p-8">
+    <h1 class="text-2xl font-bold text-center mb-6 bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+      Language Translation Tool
+    </h1>
+
+    <!-- Language Controls -->
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+      <div class="w-full md:w-5/12">
+        <label class="block text-xs text-slate-400 uppercase font-semibold mb-2">Source Language</label>
+        <select id="sourceLang" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="auto">Auto Detect</option>
+          <option value="en" selected>English</option>
+          <option value="es">Spanish</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+          <option value="hi">Hindi</option>
+          <option value="zh">Chinese</option>
+          <option value="ja">Japanese</option>
+          <option value="ar">Arabic</option>
+        </select>
+      </div>
+
+      <button id="swapBtn" title="Swap languages" class="p-3 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-all">
+        <i class="fa-solid fa-arrows-rotate text-lg"></i>
+      </button>
+
+      <div class="w-full md:w-5/12">
+        <label class="block text-xs text-slate-400 uppercase font-semibold mb-2">Target Language</label>
+        <select id="targetLang" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="es" selected>Spanish</option>
+          <option value="en">English</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+          <option value="hi">Hindi</option>
+          <option value="zh">Chinese</option>
+          <option value="ja">Japanese</option>
+          <option value="ar">Arabic</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Text Area Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Input Card -->
+      <div class="bg-slate-900 rounded-xl border border-slate-700 p-4 flex flex-col justify-between h-64">
+        <textarea id="inputText" placeholder="Enter text to translate..." class="w-full h-40 bg-transparent resize-none text-slate-100 focus:outline-none text-sm placeholder-slate-500"></textarea>
+        <div class="flex items-center justify-between border-t border-slate-800 pt-3">
+          <button id="speakInput" title="Listen" class="text-slate-400 hover:text-blue-400 transition-colors">
+            <i class="fa-solid fa-volume-high"></i>
+          </button>
+          <button id="translateBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all">
+            Translate
+          </button>
+        </div>
+      </div>
+
+      <!-- Output Card -->
+      <div class="bg-slate-900 rounded-xl border border-slate-700 p-4 flex flex-col justify-between h-64 relative">
+        <div id="loading" class="hidden absolute inset-0 bg-slate-900/80 rounded-xl flex items-center justify-center z-10">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+        <textarea id="outputText" readonly placeholder="Translation will appear here..." class="w-full h-40 bg-transparent resize-none text-slate-100 focus:outline-none text-sm placeholder-slate-500 cursor-default"></textarea>
+        <div class="flex items-center justify-between border-t border-slate-800 pt-3">
+          <div class="space-x-3">
+            <button id="speakOutput" title="Listen" class="text-slate-400 hover:text-blue-400 transition-colors">
+              <i class="fa-solid fa-volume-high"></i>
+            </button>
+            <button id="copyBtn" title="Copy text" class="text-slate-400 hover:text-blue-400 transition-colors">
+              <i class="fa-regular fa-copy"></i>
+            </button>
+          </div>
+          <span id="copyNotice" class="text-xs text-emerald-400 opacity-0 transition-opacity">Copied!</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const inputText = document.getElementById('inputText');
+    const outputText = document.getElementById('outputText');
+    const sourceLang = document.getElementById('sourceLang');
+    const targetLang = document.getElementById('targetLang');
+    const translateBtn = document.getElementById('translateBtn');
+    const swapBtn = document.getElementById('swapBtn');
+    const loading = document.getElementById('loading');
+    const copyBtn = document.getElementById('copyBtn');
+    const copyNotice = document.getElementById('copyNotice');
+
+    // API Translation Logic
+    async function translateText() {
+      const text = inputText.value.trim();
+      if (!text) return;
+
+      loading.classList.remove('hidden');
+
+      try {
+        const response = await fetch('https://translate.argosopentech.com/translate', {
+          method: 'POST',
+          body: JSON.stringify({
+            q: text,
+            source: sourceLang.value,
+            target: targetLang.value,
+            format: "text"
+          }),
+          headers: { "Content-Type": "application/json" }
+        });
+
+        const data = await response.json();
+        if (data.translatedText) {
+          outputText.value = data.translatedText;
+        } else {
+          outputText.value = "Translation error. Please try again.";
+        }
+      } catch (error) {
+        outputText.value = "Unable to connect to translation server.";
+      } finally {
+        loading.classList.add('hidden');
+      }
+    }
+
+    // Text-to-Speech Helper
+    function speak(text, lang) {
+      if (!text) return;
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (lang !== 'auto') utterance.lang = lang;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Event Listeners
+    translateBtn.addEventListener('click', translateText);
+
+    swapBtn.addEventListener('click', () => {
+      if (sourceLang.value === 'auto') return;
+      const temp = sourceLang.value;
+      sourceLang.value = targetLang.value;
+      targetLang.value = temp;
+      
+      const tempText = inputText.value;
+      inputText.value = outputText.value;
+      outputText.value = tempText;
+    });
+
+    copyBtn.addEventListener('click', () => {
+      if (!outputText.value) return;
+      navigator.clipboard.writeText(outputText.value);
+      copyNotice.classList.remove('opacity-0');
+      setTimeout(() => copyNotice.classList.add('opacity-0'), 2000);
+    });
+
+    document.getElementById('speakInput').addEventListener('click', () => {
+      speak(inputText.value, sourceLang.value);
+    });
+
+    document.getElementById('speakOutput').addEventListener('click', () => {
+      speak(outputText.value, targetLang.value);
+    });
+  </script>
+</body>
+</html>
